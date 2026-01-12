@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: "https://github.com/imsociable/game-monitoring-stack.git"
-    targetRevision: helm-migration-clean
+    repoURL: "https://github.com/imsociable/ansible-kubernetes-gitops-infra.git"
+    targetRevision: main
     path: helm/my-chart               
   destination:
     server: "https://kubernetes.default.svc"
