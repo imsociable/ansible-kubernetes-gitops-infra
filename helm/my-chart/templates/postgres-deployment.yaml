@@ -1,0 +1,74 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-postgres
+spec:
+  replicas: {{ .Values.postgres.replicaCount }}
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+        env:
+        - name: POSTGRES_DB
+          value: {{ .Values.postgres.database | quote }}
+          
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: stack-secrets
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: stack-secrets
+              key: postgres-password
+        - name: PGDATA
+          value: "/var/lib/postgresql/data"
+        - name: POSTGRES_INITDB_ARGS
+          value: "--auth-host=md5"
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: config-volume
+          mountPath: /etc/postgresql/
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - {{ .Values.postgres.username }}
+            - -h
+            - localhost
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - {{ .Values.postgres.username }}
+            - -h
+            - localhost
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.postgres.resources | nindent 10 }}
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-postgres-pvc
+      - name: config-volume
+        configMap:
+          name: {{ .Release.Name }}-postgres-config
+{{- end }}
+

@@ -1,0 +1,32 @@
+# templates/alertmanager-deployment.yaml
+{{- if .Values.alertmanager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-alertmanager
+spec:
+  replicas: {{ .Values.alertmanager.replicaCount }}
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: "{{ .Values.alertmanager.image.repository }}:{{ .Values.alertmanager.image.tag }}"
+        args:
+        - '--config.file=/etc/alertmanager/alertmanager.yml'
+        - '--storage.path=/alertmanager'
+        ports:
+        - containerPort: 9093
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/alertmanager/
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Release.Name }}-alertmanager-config
+{{- end }}

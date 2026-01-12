@@ -1,0 +1,51 @@
+{{- if .Values.backup.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-metrics-backup
+spec:
+  replicas: {{ .Values.backup.replicaCount }}
+  selector:
+    matchLabels:
+      app: metrics-backup
+  template:
+    metadata:
+      labels:
+        app: metrics-backup
+    spec:
+      containers:
+      - name: metrics-backup
+        image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
+        workingDir: /app
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            pip install psycopg2-binary requests &&
+            python /app/backup_latency.py
+        env:
+        - name: POSTGRES_HOST
+          value: "{{ .Release.Name }}-postgres-service"
+        - name: PROMETHEUS_HOST
+          value: "{{ .Release.Name }}-prometheus-service"
+        - name: POSTGRES_DB
+          value: "{{ .Values.postgres.database }}"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: stack-secrets
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: stack-secrets
+              key: postgres-password
+        volumeMounts:
+        - name: script-volume
+          mountPath: /app
+        resources:
+          {{- toYaml .Values.backup.resources | nindent 10 }}
+      volumes:
+      - name: script-volume
+        configMap:
+          name: {{ .Release.Name }}-backup-script
+{{- end }}

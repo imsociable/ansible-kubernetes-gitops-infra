@@ -1,0 +1,32 @@
+{{- if .Values.blackbox.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-blackbox-exporter
+spec:
+  replicas: {{ .Values.blackbox.replicaCount }}
+  selector:
+    matchLabels:
+      app: blackbox-exporter
+  template:
+    metadata:
+      labels:
+        app: blackbox-exporter
+    spec:
+      containers:
+      - name: blackbox-exporter
+        image: "{{ .Values.blackbox.image.repository }}:{{ .Values.blackbox.image.tag }}"
+        args:
+          - --config.file=/etc/blackbox_exporter/blackbox.yml
+        ports:
+        - containerPort: 9115
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/blackbox_exporter/
+        resources:
+          {{- toYaml .Values.blackbox.resources | nindent 10 }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Release.Name }}-blackbox-config
+{{- end }}

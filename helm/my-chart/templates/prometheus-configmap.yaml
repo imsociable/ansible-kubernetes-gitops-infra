@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-prometheus-config
+  labels:
+    app: prometheus
+    chart: "{{ .Chart.Name }}"
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: {{ .Values.prometheus.scrapeInterval | default "15s" }}
+
+    rule_files:
+      - "/etc/prometheus/alerts.yml"
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+                - '{{ .Release.Name }}-alertmanager-service:9093'
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'node-exporter'
+        static_configs:
+          - targets: ['{{ .Release.Name }}-node-exporter-service:9100']
+
+      - job_name: 'postgres'
+        static_configs:
+          - targets: ['{{ .Release.Name }}-postgres-exporter-service:9187']
+
+      # Игровые серверы - вынесем в values.yaml
+      {{- range .Values.prometheus.gameServers }}
+      - job_name: 'game_server_{{ .name }}'
+        metrics_path: /probe
+        params:
+          module: [icmp]
+        static_configs:
+          - targets:
+              - '{{ .ip }}'
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: {{ $.Release.Name }}-blackbox-service:9115
+      {{- end }}
+
+      - job_name: 'blackbox'
+        metrics_path: /metrics
+        static_configs:
+          - targets:
+              - '{{ .Release.Name }}-blackbox-service:9115'
+
+  alerts.yml: |
+    groups:
+      - name: infrastructure
+        rules:
+          {{- range .Values.prometheus.alerts }}
+          - alert: {{ .name }}
+            expr: {{ .expr }}
+            for: {{ .for }}
+            labels:
+              severity: {{ .severity }}
+            annotations:
+              summary: "{{ .summary }}"
+              description: "{{ .description }}"
+          {{- end }}

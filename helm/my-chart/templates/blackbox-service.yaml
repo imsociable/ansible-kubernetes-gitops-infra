@@ -1,0 +1,12 @@
+{{- if .Values.blackbox.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-blackbox-service
+spec:
+  selector:
+    app: blackbox-exporter
+  ports:
+  - port: 9115
+    targetPort: 9115
+{{- end }}

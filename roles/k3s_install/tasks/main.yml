@@ -1,0 +1,36 @@
+---
+- name: Install prerequisites
+  apt:
+    name: ["curl", "ca-certificates"]
+    state: present
+    update_cache: yes
+
+- name: Install K3s
+  shell: |
+    curl -sfL https://get.k3s.io | sh -s - server \
+    --flannel-backend=none \
+    --disable-network-policy \
+    --disable-kube-proxy \
+    --disable=traefik \
+    --write-kubeconfig-mode 644
+  args:
+    creates: /usr/local/bin/k3s
+
+- name: Wait for K3s API to be ready
+  wait_for:
+    port: 6443
+    delay: 5
+    timeout: 300
+
+- name: Create .kube directory for user
+  file:
+    path: "/root/.kube"
+    state: directory
+    mode: '0755'
+
+- name: Copy kubeconfig to default location
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: /root/.kube/config
+    remote_src: yes
+    mode: '0600'

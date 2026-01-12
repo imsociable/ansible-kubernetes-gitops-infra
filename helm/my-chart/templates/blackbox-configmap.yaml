@@ -1,0 +1,14 @@
+{{- if .Values.blackbox.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-blackbox-config
+data:
+  blackbox.yml: |
+    modules:
+      icmp:
+        prober: icmp
+        timeout: 5s
+        icmp:
+          preferred_ip_protocol: "ip4"
+{{- end }}

@@ -1,0 +1,26 @@
+{{- if .Values.postgresExporter.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-postgres-exporter
+spec:
+  replicas: {{ .Values.postgresExporter.replicaCount }}
+  selector:
+    matchLabels:
+      app: postgres-exporter
+  template:
+    metadata:
+      labels:
+        app: postgres-exporter
+    spec:
+      containers:
+      - name: postgres-exporter
+        image: "{{ .Values.postgresExporter.image.repository }}:{{ .Values.postgresExporter.image.tag }}"
+        env:
+        - name: DATA_SOURCE_NAME
+          value: "postgresql://{{ .Values.postgres.username }}:{{ .Values.postgres.password }}@{{ .Release.Name }}-postgres-service:5432/{{ .Values.postgres.database }}?sslmode=disable"
+        ports:
+        - containerPort: 9187
+        resources:
+          {{- toYaml .Values.postgresExporter.resources | nindent 10 }}
+{{- end }}

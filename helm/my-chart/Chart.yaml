@@ -1,0 +1,12 @@
+apiVersion: v2
+name: my-stack
+version: 0.1.0
+dependencies:
+  - name: loki
+    version: 5.41.6
+    repository: https://grafana.github.io/helm-charts
+    condition: loki.enabled
+  - name: promtail
+    version: 6.15.3
+    repository: https://grafana.github.io/helm-charts
+    condition: promtail.enabled

@@ -1,0 +1,229 @@
+replicaCount: 1
+
+image:
+  repository: grafana/grafana
+  tag: 12.3-ubuntu
+  pullPolicy: IfNotPresent
+
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+prometheus:
+  enabled: true
+  replicaCount: 1
+  scrapeInterval: "15s"
+  
+  gameServers:
+    - name: "gameserver1"
+      ip: "162.249.72.0"
+    - name: "gameserver2"
+      ip: "185.40.64.0"
+    - name: "googledns"
+      ip: "8.8.8.8"
+    - name: "cloudflare"
+      ip: "1.1.1.1"
+  
+  # Алерты
+  alerts:
+    - name: "HighLatency"
+      expr: "probe_duration_seconds > 0.1"
+      for: "1m"
+      severity: "warning"
+      summary: "High latency to game server"
+      description: "Latency to {{ $labels.instance }} is {{ $value }}s"
+    
+    - name: "ServiceDown"
+      expr: "probe_success == 0"
+      for: "1m"
+      severity: "critical"
+      summary: "Game server is down"
+      description: "{{ $labels.instance }} is not responding"
+    
+    - name: "NodeHighCPU"
+      expr: '100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80'
+      for: "5m"
+      severity: "warning"
+      summary: "High CPU usage on {{ $labels.instance }}"
+      description: "CPU usage is {{ $value }}%"
+    
+    - name: "NodeHighMemory"
+      expr: "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80"
+      for: "5m"
+      severity: "warning"
+      summary: "High memory usage on {{ $labels.instance }}"
+      description: "Memory usage is {{ $value }}%"
+    
+    - name: "TestAlert"
+      expr: "up == 1"
+      for: "0s"
+      severity: "test"
+      summary: "Test alert"
+
+  image:
+    repository: prom/prometheus
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  service:
+    type: LoadBalancer
+    port: 9090
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+alertmanager:
+  enabled: true
+  replicaCount: 1
+  
+  
+  image:
+    repository: prom/alertmanager
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+
+blackbox:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: prom/blackbox-exporter
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+nodeExporter:
+  enabled: true
+  
+  image:
+    repository: prom/node-exporter
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+
+postgres:
+  enabled: true
+  replicaCount: 1
+  
+  database: "monitoring"
+  
+  image:
+    repository: postgres
+    tag: "15"
+    pullPolicy: IfNotPresent
+  
+  storage:
+    size: "5Gi"
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
+
+postgresExporter:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: prometheuscommunity/postgres-exporter
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+backup:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: python
+    tag: "3.9-slim"
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+loki:  
+  deploymentMode: SingleBinary
+  
+  loki:
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+
+  singleBinary:
+    replicas: 1
+ 
+  backend:
+    replicas: 0
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+  ingester:
+    replicas: 0
+  querier:
+    replicas: 0
+  test:
+    enabled: false 
+  monitoring:
+    selfMonitoring:
+      enabled: false
+      grafanaAgent:
+        installOperator: false
+
+promtail:
+  enabled: true
+  config:
+    clients:
+      - url: http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push

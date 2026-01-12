@@ -1,0 +1,6 @@
+
+github_token: "{{ vault_github_token }}"
+
+repo_url: "https://{{ github_token }}@github.com/imsociable/game-monitoring-stack.git"
+
+k3s_log_level: "info"

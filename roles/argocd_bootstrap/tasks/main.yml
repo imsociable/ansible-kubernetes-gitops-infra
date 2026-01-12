@@ -1,0 +1,97 @@
+---
+- name: Install kubernetes python library via apt
+  apt:
+    name: python3-kubernetes
+    state: present
+    update_cache: yes
+
+# --- БЛОК ВОССТАНОВЛЕНИЯ КЛЮЧЕЙ ---
+- name: Ensure kube-system namespace exists
+  kubernetes.core.k8s:
+    name: kube-system
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Copy Master Key to remote
+  copy:
+    src: master-key.yaml # Берет из папки files/
+    dest: /tmp/master-key.yaml
+    mode: '0600'
+
+- name: Apply Master Key
+  shell: kubectl apply -f /tmp/master-key.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Remove Master Key from remote
+  file:
+    path: /tmp/master-key.yaml
+    state: absent
+# ----------------------------------
+
+- name: Add ArgoCD Helm repo
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: "https://argoproj.github.io/argo-helm"
+
+- name: Create argocd namespace
+  kubernetes.core.k8s:
+    name: argocd
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Install ArgoCD via Helm (Lightweight)
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo/argo-cd
+    release_namespace: argocd
+    chart_version: 5.51.6
+    values:
+      controller: { replicas: 1 }
+      server: { replicas: 1 }
+      repoServer: { replicas: 1 }
+      applicationSet: { replicas: 1 }
+      dex: { enabled: false }
+      redis-ha: { enabled: false }
+      redis: { enabled: true }
+
+- name: Configure Private Repo Creds
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: main-repo-creds
+        namespace: argocd
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      stringData:
+        url: "https://github.com/imsociable/game-monitoring-stack.git"
+        password: "{{ vault_github_token }}" # Из group_vars/all/secrets.yml
+        username: "git"
+
+- name: Create Root Application
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      metadata:
+        name: root-app
+        namespace: argocd
+      spec:
+        project: default
+        source:
+          repoURL: "https://github.com/imsociable/game-monitoring-stack.git"
+          targetRevision: helm-migration-clean
+          path: bootstrap
+        destination:
+          server: "https://kubernetes.default.svc"
+          namespace: argocd
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true

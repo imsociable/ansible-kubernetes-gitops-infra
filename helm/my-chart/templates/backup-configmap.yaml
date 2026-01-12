@@ -1,0 +1,81 @@
+{{- if .Values.backup.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-backup-script
+data:
+  backup_latency.py: |
+    #!/usr/bin/env python3
+    import psycopg2
+    import requests
+    from datetime import datetime
+    import time
+    import os
+
+    def ensure_table_exists(conn):
+        """Создает таблицу если она не существует"""
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS latency_metrics (
+                id SERIAL PRIMARY KEY,
+                instance VARCHAR(255) NOT NULL,
+                latency_ms DECIMAL(10,3) NOT NULL,
+                probe_success BOOLEAN NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_latency_metrics_created_at 
+            ON latency_metrics(created_at)
+        """)
+        conn.commit()
+        cursor.close()
+
+    def save_latency_metrics():
+        # Подключение к PostgreSQL - теперь через переменные окружения!
+        conn = psycopg2.connect(
+            host=os.getenv("POSTGRES_HOST", "{{ .Release.Name }}-postgres-service"),
+            database=os.getenv("POSTGRES_DB", "{{ .Values.postgres.database }}"),
+            user=os.getenv("POSTGRES_USER"),
+            password=os.getenv("POSTGRES_PASSWORD"),
+            port="5432"
+        )
+        
+        # Убеждаемся что таблица существует
+        ensure_table_exists(conn)
+        
+        cursor = conn.cursor()
+        
+        # Запрос к Prometheus API
+        prometheus_url = f"http://{os.getenv('PROMETHEUS_HOST', '{{ .Release.Name }}-prometheus-service')}:9090/api/v1/query"
+        query = 'probe_duration_seconds'
+        
+        try:
+            response = requests.get(prometheus_url, params={'query': query})
+            data = response.json()
+            
+            # Сохраняем КАЖДУЮ метрику latency в БД
+            for result in data['data']['result']:
+                instance = result['metric'].get('instance', 'unknown')
+                latency_seconds = float(result['value'][1])
+                latency_ms = round(latency_seconds * 1000, 2)
+                
+                cursor.execute("""
+                    INSERT INTO latency_metrics (instance, latency_ms, probe_success)
+                    VALUES (%s, %s, %s)
+                """, (instance, latency_ms, True))
+            
+            conn.commit()
+            print(f"{datetime.now()} - Saved {len(data['data']['result'])} latency metrics")
+            
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            cursor.close()
+            conn.close()
+
+    if __name__ == "__main__":
+        while True:
+            save_latency_metrics()
+            time.sleep(60)  # сохраняем каждую минуту
+{{- end }}

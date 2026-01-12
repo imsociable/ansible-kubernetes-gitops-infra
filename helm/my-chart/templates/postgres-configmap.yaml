@@ -1,0 +1,19 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-postgres-config
+data:
+  postgresql.conf: |
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 100
+    shared_buffers = 128MB
+    dynamic_shared_memory_type = posix
+  pg_hba.conf: |
+    local all all trust
+    host all all 127.0.0.1/32 trust
+    host all all ::1/128 trust
+    host all all 0.0.0.0/0 md5
+    host all all ::/0 md5
+{{- end }}

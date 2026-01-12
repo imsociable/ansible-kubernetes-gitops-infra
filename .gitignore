@@ -1,0 +1,2 @@
+group_vars/all/secrets.yml
+roles/argocd_bootstrap/files/master-key.yaml

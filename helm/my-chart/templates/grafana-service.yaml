@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-grafana-service  # ← добавляем имя релиза
+spec:
+  type: LoadBalancer
+  selector:
+    app: grafana
+    release: {{ .Release.Name }}  # ← связываем с deployment
+  ports:
+  - port: 3000
+    targetPort: 3000

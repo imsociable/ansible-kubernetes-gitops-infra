@@ -1,0 +1,9 @@
+---
+- name: Bootstrap K3s Cluster with Cilium and ArgoCD
+  hosts: monitoring-vm-0
+  become: yes
+  
+  roles:
+    - k3s_install
+    - cilium_install
+    - argocd_bootstrap

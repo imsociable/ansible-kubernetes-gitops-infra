@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-grafana
+  labels:
+    chart: "{{ .Chart.Name }}"
+    version: "{{ .Chart.Version }}"
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: grafana
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: grafana
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: grafana
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: stack-secrets
+              key: admin-password
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
