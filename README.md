@@ -19,36 +19,8 @@ Zero-touch GitOps-инфраструктура для Kubernetes на базе k
 После bootstrap **вся дальнейшая работа ведётся через Git (GitOps)**.
 
 ---
-Polymarket-Copy-Trading-Bot/
-│
-├── rust/                    # Rust implementation
-│   ├── src/                # Source code
-│   ├── docs/               # Documentation
-│   ├── README.md           # Rust bot documentation
-│   └── Cargo.toml          # Rust dependencies
-│
-├── python/                  # Python implementation
-│   ├── src/                # Source code
-│   ├── docs/               # Documentation
-│   ├── scripts/            # Utility scripts
-│   ├── README.md           # Python bot documentation
-│   └── requirements.txt    # Python dependencies
-│
-└── README.md               # This file
+
 ## 🧭 Architecture
-VM (Cloud / VPS)
- └─ Ansible
-     └─ k3s (без flannel)
-         └─ Cilium
-             ├─ Hubble (network observability)
-             ├─ Argo CD
-             │    └─ GitOps repository
-             │         └─ Observability stack
-             │              ├─ Prometheus (+ exporters)
-             │              ├─ Grafana
-             │              ├─ Alertmanager
-             │              ├─ Loki + Promtail
-             │              └─ PostgreSQL (+ metrics backup script)
 
 Инфраструктура разделена на два слоя:
 
