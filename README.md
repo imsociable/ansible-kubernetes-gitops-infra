@@ -21,6 +21,7 @@ Zero-touch GitOps-инфраструктура для Kubernetes на базе k
 ---
 
 ## 🧭 Architecture
+```
 VM (Cloud / VPS)
  └─ Ansible
      └─ k3s (без flannel)
@@ -34,6 +35,7 @@ VM (Cloud / VPS)
              │              ├─ Alertmanager
              │              ├─ Loki + Promtail
              │              └─ PostgreSQL (+ metrics backup script)
+```
 Инфраструктура разделена на два слоя:
 
 - 🛠 **Bootstrap layer** — всё до Argo CD
