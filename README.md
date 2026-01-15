@@ -127,4 +127,3 @@ Argo CD отвечает за:
 - PostgreSQL
 - Python
 - Linux
-- 
