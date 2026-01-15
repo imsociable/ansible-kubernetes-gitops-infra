@@ -26,7 +26,6 @@ VM (Cloud / VPS)
  └─ Ansible
      └─ k3s (без flannel)
          └─ Cilium
-             ├─ Hubble (network observability)
              ├─ Argo CD
              │    └─ GitOps repository
              │         └─ Observability stack
@@ -128,4 +127,4 @@ Argo CD отвечает за:
 - PostgreSQL
 - Python
 - Linux
-
+- 
