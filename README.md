@@ -22,18 +22,26 @@ Zero-touch GitOps-инфраструктура для Kubernetes на базе k
 
 ## 🧭 Architecture
 ```
-VM (Cloud / VPS)
- └─ Ansible
-     └─ k3s (без flannel)
-         └─ Cilium
-             ├─ Argo CD
-             │    └─ GitOps repository
-             │         └─ Observability stack
-             │              ├─ Prometheus (+ exporters)
-             │              ├─ Grafana
-             │              ├─ Alertmanager
-             │              ├─ Loki + Promtail
-             │              └─ PostgreSQL (+ metrics backup script)
+platform/
+├── README.md               
+├── .gitignore              
+│
+├── ansible/                # infra-repo
+│   ├── inventory/
+│   ├── roles/
+│   └── playbook.yml
+│
+└── kubernetes-config/             # apps-repo (скопирован сюда для удобства просмотра, ссылки в коде указаны на приватный репозиторий)
+    ├── bootstrap/          # ArgoCD App of Apps 
+    │
+    └── charts/             
+        └── game-monitoring-stack/  
+            ├── Chart.yaml          
+            ├── Chart.lock        
+            ├── values.yaml         
+            └── templates/         
+                ├── sealed-secrets.yaml 
+                └── ...
 ```
 Инфраструктура разделена на два слоя:
 
