@@ -32,15 +32,18 @@ platform/
 │   └── playbook.yml
 │
 └── kubernetes-config/             # apps-repo (скопирован сюда для удобства просмотра, ссылки в коде указаны на приватный репозиторий)
-    ├── bootstrap/          # ArgoCD App of Apps 
+    ├── argocd/          # ArgoCD App of Apps 
+    │   └── bootstrap/
+    │       ├── monitoring-stack.yaml
+    │       └── sealed-secrets.yaml (infra)
     │
-    └── charts/             
-        └── game-monitoring-stack/  
+    └── helm/        
+        └── my-chart/  
             ├── Chart.yaml          
             ├── Chart.lock        
             ├── values.yaml         
             └── templates/         
-                ├── sealed-secrets.yaml 
+                ├── sealed-secrets.yaml (apps)
                 └── ...
 ```
 Инфраструктура разделена на два слоя:
